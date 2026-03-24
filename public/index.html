@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rubik Arena</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="arena" aria-label="Cube arena"></div>
+
+  <div id="panel">
+    <div id="lobby" class="panel-section">
+      <div class="panel-header">
+        <div class="title">Rubik Arena</div>
+        <div class="subtitle">Create or join a room. Two players solve, spectators watch live.</div>
+      </div>
+
+      <label class="field">
+        <span>Player Name</span>
+        <input id="nameInput" type="text" placeholder="Your name" maxlength="20" />
+      </label>
+      <label class="field">
+        <span>Room Name (optional)</span>
+        <input id="roomNameInput" type="text" placeholder="My awesome room" maxlength="32" />
+      </label>
+      <label class="toggle">
+        <input id="publicToggle" type="checkbox" checked />
+        <span>Public room (shows on board)</span>
+      </label>
+      <label class="field">
+        <span>Room Password (optional)</span>
+        <input id="roomPasswordInput" type="password" placeholder="Leave blank for none" maxlength="32" />
+      </label>
+
+      <div class="split">
+        <button id="createDuo" class="primary">Create 2P Room</button>
+        <button id="createSolo">Solo Room</button>
+      </div>
+
+      <div class="divider">Join Existing</div>
+
+      <div class="split">
+        <input id="codeInput" type="text" placeholder="Room Code" maxlength="5" />
+        <button id="joinBtn" class="primary">Join</button>
+      </div>
+      <label class="field">
+        <span>Room Password (if required)</span>
+        <input id="joinPasswordInput" type="password" placeholder="Enter room password" maxlength="32" />
+      </label>
+      <div class="full-row">
+        <button id="spectateBtn">Join as Spectator</button>
+      </div>
+
+      <div class="divider">Open Rooms</div>
+      <div id="roomBoard" class="room-board"></div>
+      <div class="full-row">
+        <button id="refreshRooms">Refresh Rooms</button>
+      </div>
+
+      <div id="lobbyError" class="error"></div>
+    </div>
+
+    <div id="room" class="panel-section hidden">
+      <div class="room-header">
+        <div>
+          <div class="label">Room</div>
+          <div id="roomCode" class="value">-----</div>
+        </div>
+        <div id="roleBadge" class="badge">HOST</div>
+      </div>
+
+      <div class="status-grid">
+        <div>
+          <div class="label">Status</div>
+          <div id="statusText" class="value">Waiting for players...</div>
+        </div>
+        <div>
+          <div class="label">Timer</div>
+          <div id="timer" class="value">05:00</div>
+        </div>
+      </div>
+
+      <div class="lists">
+        <div>
+          <div class="label">Players</div>
+          <div id="playerList" class="list"></div>
+        </div>
+        <div>
+          <div class="label">Spectators</div>
+          <div id="spectatorList" class="list"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="scrambleBtn" class="primary">Scramble & Start</button>
+        <button id="resetView">Center Views</button>
+      </div>
+
+      <div class="move-controls" id="moveControls">
+        <button data-face="U" data-dir="1">U</button>
+        <button data-face="D" data-dir="1">D</button>
+        <button data-face="L" data-dir="1">L</button>
+        <button data-face="R" data-dir="1">R</button>
+        <button data-face="F" data-dir="1">F</button>
+        <button data-face="B" data-dir="1">B</button>
+        <button data-face="U" data-dir="-1">U'</button>
+        <button data-face="D" data-dir="-1">D'</button>
+        <button data-face="L" data-dir="-1">L'</button>
+        <button data-face="R" data-dir="-1">R'</button>
+        <button data-face="F" data-dir="-1">F'</button>
+        <button data-face="B" data-dir="-1">B'</button>
+      </div>
+
+      <div class="hint">Keys: U D L R F B (hold Shift for inverse). Drag any cube to rotate the view.</div>
+    </div>
+  </div>
+
+  <div id="chat" class="chat hidden">
+    <div id="chatHeader" class="chat-header">Room Chat</div>
+    <div id="chatMessages" class="chat-messages"></div>
+    <div class="chat-input">
+      <input id="chatText" type="text" placeholder="Type a message..." maxlength="200" />
+      <button id="chatSend">Send</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>

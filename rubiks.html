@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D Rubik's Cube</title>
+  <style>
+    :root {
+      --size: 64px;
+      --gap: 4px;
+      --bevel: 6px;
+      --bg1: #0e0f13;
+      --bg2: #1b1f2a;
+      --bg3: #232a3a;
+      --shadow: rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: radial-gradient(1200px 700px at 20% 10%, var(--bg3), var(--bg1));
+      color: #e7e9ee;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      letter-spacing: 0.2px;
+    }
+
+    #viewport {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      perspective: 900px;
+      perspective-origin: 50% 40%;
+      cursor: grab;
+      user-select: none;
+    }
+
+    #viewport.dragging {
+      cursor: grabbing;
+    }
+
+    #scene {
+      position: relative;
+      width: 0;
+      height: 0;
+      transform-style: preserve-3d;
+      transform: rotateX(-25deg) rotateY(35deg);
+    }
+
+    #cube {
+      position: relative;
+      width: 0;
+      height: 0;
+      transform-style: preserve-3d;
+    }
+
+    .cubie {
+      position: absolute;
+      width: var(--size);
+      height: var(--size);
+      transform-style: preserve-3d;
+    }
+
+    .face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 7px;
+      border: 2px solid rgba(12, 12, 12, 0.9);
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+        inset 0 0 18px rgba(0, 0, 0, 0.55);
+      backface-visibility: hidden;
+    }
+
+    .front  { transform: translateZ(calc(var(--size) / 2)); }
+    .back   { transform: rotateY(180deg) translateZ(calc(var(--size) / 2)); }
+    .right  { transform: rotateY(90deg) translateZ(calc(var(--size) / 2)); }
+    .left   { transform: rotateY(-90deg) translateZ(calc(var(--size) / 2)); }
+    .up     { transform: rotateX(90deg) translateZ(calc(var(--size) / 2)); }
+    .down   { transform: rotateX(-90deg) translateZ(calc(var(--size) / 2)); }
+
+    #hud {
+      position: absolute;
+      inset: 18px 18px auto 18px;
+      display: grid;
+      gap: 8px;
+      max-width: min(520px, 95vw);
+      background: rgba(18, 20, 28, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 18px 40px var(--shadow);
+      backdrop-filter: blur(6px);
+    }
+
+    #hud h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    #hud p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.4;
+      color: rgba(231, 233, 238, 0.8);
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(30, 34, 48, 0.8);
+      color: #f1f3f8;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    button:hover { background: rgba(55, 62, 88, 0.9); }
+    button:active { transform: translateY(1px); }
+
+    #footer {
+      position: absolute;
+      inset: auto 18px 18px 18px;
+      font-size: 12px;
+      color: rgba(231, 233, 238, 0.6);
+    }
+
+    @media (max-width: 720px) {
+      :root { --size: 50px; --gap: 3px; }
+      #hud { font-size: 12px; }
+      button { padding: 5px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="viewport" aria-label="Drag to rotate the cube">
+    <div id="scene">
+      <div id="cube"></div>
+    </div>
+  </div>
+
+  <div id="hud">
+    <h1>Rubik's Cube</h1>
+    <p>Drag to rotate the whole cube. Use buttons or keys U D L R F B (hold Shift for inverse turns).</p>
+    <div id="controls">
+      <button data-face="U" data-dir="1">U</button>
+      <button data-face="D" data-dir="1">D</button>
+      <button data-face="L" data-dir="1">L</button>
+      <button data-face="R" data-dir="1">R</button>
+      <button data-face="F" data-dir="1">F</button>
+      <button data-face="B" data-dir="1">B</button>
+      <button data-face="U" data-dir="-1">U'</button>
+      <button data-face="D" data-dir="-1">D'</button>
+      <button data-face="L" data-dir="-1">L'</button>
+      <button data-face="R" data-dir="-1">R'</button>
+      <button data-face="F" data-dir="-1">F'</button>
+      <button data-face="B" data-dir="-1">B'</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <div id="footer">Tip: hold the pointer on empty space and drag for a smooth spin.</div>
+
+  <script>
+    const cubeEl = document.getElementById('cube');
+    const sceneEl = document.getElementById('scene');
+    const viewportEl = document.getElementById('viewport');
+
+    const SIZE = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--size'));
+    const GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
+    const STEP = SIZE + GAP;
+
+    const COLORS = {
+      front: '#00a651',
+      back: '#0051ba',
+      right: '#c41e3a',
+      left: '#ff5800',
+      up: '#f4f4f4',
+      down: '#ffd500',
+      inner: '#101218'
+    };
+
+    const faceDefs = [
+      { name: 'front', className: 'front' },
+      { name: 'back', className: 'back' },
+      { name: 'right', className: 'right' },
+      { name: 'left', className: 'left' },
+      { name: 'up', className: 'up' },
+      { name: 'down', className: 'down' },
+    ];
+
+    const cubies = [];
+
+    function identity() {
+      return [
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1
+      ];
+    }
+
+    function matMul(a, b) {
+      const r = new Array(9);
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          r[row * 3 + col] =
+            a[row * 3 + 0] * b[0 * 3 + col] +
+            a[row * 3 + 1] * b[1 * 3 + col] +
+            a[row * 3 + 2] * b[2 * 3 + col];
+        }
+      }
+      return r;
+    }
+
+    function matVecMul(m, v) {
+      return {
+        x: m[0] * v.x + m[1] * v.y + m[2] * v.z,
+        y: m[3] * v.x + m[4] * v.y + m[5] * v.z,
+        z: m[6] * v.x + m[7] * v.y + m[8] * v.z,
+      };
+    }
+
+    function rotMat(axis, angle) {
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      if (axis === 'x') {
+        return [
+          1, 0, 0,
+          0, c, -s,
+          0, s, c
+        ];
+      }
+      if (axis === 'y') {
+        return [
+          c, 0, s,
+          0, 1, 0,
+          -s, 0, c
+        ];
+      }
+      return [
+        c, -s, 0,
+        s, c, 0,
+        0, 0, 1
+      ];
+    }
+
+    function clampNear(value) {
+      if (Math.abs(value) < 1e-6) return 0;
+      if (Math.abs(value - 1) < 1e-6) return 1;
+      if (Math.abs(value + 1) < 1e-6) return -1;
+      return value;
+    }
+
+    function clampMatrix(m) {
+      return m.map(clampNear);
+    }
+
+    function clampVec(v) {
+      return {
+        x: Math.round(v.x),
+        y: Math.round(v.y),
+        z: Math.round(v.z)
+      };
+    }
+
+    function toMatrix3d(m) {
+      return `matrix3d(${[
+        m[0], m[3], m[6], 0,
+        m[1], m[4], m[7], 0,
+        m[2], m[5], m[8], 0,
+        0, 0, 0, 1
+      ].join(',')})`;
+    }
+
+    function applyTransform(cubie, pos, ori) {
+      const tx = pos.x * STEP;
+      const ty = pos.y * STEP;
+      const tz = pos.z * STEP;
+      cubie.el.style.transform = `translate3d(${tx}px, ${ty}px, ${tz}px) ${toMatrix3d(ori)}`;
+    }
+
+    function createCubie(x, y, z) {
+      const el = document.createElement('div');
+      el.className = 'cubie';
+
+      for (const face of faceDefs) {
+        const faceEl = document.createElement('div');
+        faceEl.className = `face ${face.className}`;
+        let color = COLORS.inner;
+        if (face.name === 'front' && z === 1) color = COLORS.front;
+        if (face.name === 'back' && z === -1) color = COLORS.back;
+        if (face.name === 'right' && x === 1) color = COLORS.right;
+        if (face.name === 'left' && x === -1) color = COLORS.left;
+        if (face.name === 'up' && y === -1) color = COLORS.up;
+        if (face.name === 'down' && y === 1) color = COLORS.down;
+        faceEl.style.background = color;
+        el.appendChild(faceEl);
+      }
+
+      cubeEl.appendChild(el);
+      const cubie = { el, pos: { x, y, z }, ori: identity() };
+      cubies.push(cubie);
+      applyTransform(cubie, cubie.pos, cubie.ori);
+    }
+
+    function buildCube() {
+      cubeEl.innerHTML = '';
+      cubies.length = 0;
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+          for (let z = -1; z <= 1; z++) {
+            createCubie(x, y, z);
+          }
+        }
+      }
+    }
+
+    const faceAxes = {
+      F: { axis: 'z', sign: 1, layer: 'z', value: 1 },
+      B: { axis: 'z', sign: -1, layer: 'z', value: -1 },
+      R: { axis: 'x', sign: 1, layer: 'x', value: 1 },
+      L: { axis: 'x', sign: -1, layer: 'x', value: -1 },
+      U: { axis: 'y', sign: -1, layer: 'y', value: -1 },
+      D: { axis: 'y', sign: 1, layer: 'y', value: 1 },
+    };
+
+    let isAnimating = false;
+
+    function rotateFace(face, dir = 1) {
+      if (isAnimating) return;
+      const info = faceAxes[face];
+      if (!info) return;
+
+      const layerCubies = cubies.filter(c => c.pos[info.layer] === info.value);
+      if (layerCubies.length === 0) return;
+
+      isAnimating = true;
+      const angle = dir * (Math.PI / 2) * info.sign;
+      const start = layerCubies.map(c => ({
+        cubie: c,
+        pos: { ...c.pos },
+        ori: c.ori.slice()
+      }));
+
+      const duration = 260;
+      const startTime = performance.now();
+
+      function tick(now) {
+        const t = Math.min(1, (now - startTime) / duration);
+        const ease = t < 1 ? (1 - Math.cos(t * Math.PI)) / 2 : 1;
+        const R = rotMat(info.axis, angle * ease);
+
+        for (const item of start) {
+          const posT = matVecMul(R, item.pos);
+          const oriT = matMul(R, item.ori);
+          applyTransform(item.cubie, posT, oriT);
+        }
+
+        if (t < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          const R90 = rotMat(info.axis, angle);
+          for (const item of start) {
+            const posN = clampVec(matVecMul(R90, item.pos));
+            const oriN = clampMatrix(matMul(R90, item.ori));
+            item.cubie.pos = posN;
+            item.cubie.ori = oriN;
+            applyTransform(item.cubie, posN, oriN);
+          }
+          isAnimating = false;
+        }
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    function resetCube() {
+      for (const cubie of cubies) {
+        cubie.pos = { ...cubie.pos, x: cubie.pos.x, y: cubie.pos.y, z: cubie.pos.z };
+        cubie.ori = identity();
+      }
+      buildCube();
+    }
+
+    buildCube();
+
+    document.getElementById('controls').addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.id === 'reset') {
+        resetCube();
+        return;
+      }
+      const face = button.dataset.face;
+      const dir = parseInt(button.dataset.dir, 10);
+      rotateFace(face, dir);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (isAnimating) return;
+      const key = event.key.toLowerCase();
+      const faces = { u: 'U', d: 'D', l: 'L', r: 'R', f: 'F', b: 'B' };
+      if (!faces[key]) return;
+      event.preventDefault();
+      const dir = event.shiftKey ? -1 : 1;
+      rotateFace(faces[key], dir);
+    });
+
+    let rotX = -25;
+    let rotY = 35;
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function updateScene() {
+      sceneEl.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    }
+
+    viewportEl.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      viewportEl.classList.add('dragging');
+      lastX = event.clientX;
+      lastY = event.clientY;
+      viewportEl.setPointerCapture(event.pointerId);
+    });
+
+    viewportEl.addEventListener('pointermove', (event) => {
+      if (!dragging) return;
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+      rotY += dx * 0.4;
+      rotX -= dy * 0.4;
+      rotX = Math.max(-85, Math.min(85, rotX));
+      updateScene();
+      lastX = event.clientX;
+      lastY = event.clientY;
+    });
+
+    function stopDrag(event) {
+      if (!dragging) return;
+      dragging = false;
+      viewportEl.classList.remove('dragging');
+      viewportEl.releasePointerCapture(event.pointerId);
+    }
+
+    viewportEl.addEventListener('pointerup', stopDrag);
+    viewportEl.addEventListener('pointercancel', stopDrag);
+
+    updateScene();
+  </script>
+</body>
+</html>

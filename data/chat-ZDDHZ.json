@@ -1,0 +1,25 @@
+{
+  "code": "ZDDHZ",
+  "name": "My Room",
+  "updatedAt": 1774338344207,
+  "messages": [
+    {
+      "id": "d73e1266a901",
+      "name": "adhrit",
+      "text": "Hi",
+      "time": 1774338305758
+    },
+    {
+      "id": "0f0c0cebca95",
+      "name": "1234",
+      "text": "Hello",
+      "time": 1774338312502
+    },
+    {
+      "id": "737f437fa4c0",
+      "name": "debnath (spectator)",
+      "text": "I am spectator",
+      "time": 1774338344207
+    }
+  ]
+}
