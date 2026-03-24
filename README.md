@@ -35,6 +35,6 @@ Open `http://localhost:3000` in your browser.
 
 Chat history is stored in `data/chat-<ROOMCODE>.json` and keeps the last 100 messages per room.
 
-Play Online
+## Play Online
 
 https://adhrit-rubik-arena-game.onrender.com
